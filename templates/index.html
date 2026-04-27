@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NLP Spam Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #e8ff47;
+      --accent2: #ff4757;
+      --text: #e8e8f0;
+      --muted: #5a5a72;
+      --ham: #2ecc71;
+      --spam: #ff4757;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 80px;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(232,255,71,0.06) 0%, transparent 70%),
+        linear-gradient(180deg, #0a0a0f 0%, #0d0d14 100%);
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 52px;
+      animation: fadeDown 0.6s ease both;
+    }
+    .logo-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .logo-badge {
+      background: var(--accent);
+      color: #0a0a0f;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      letter-spacing: 0.1em;
+      border-radius: 3px;
+    }
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      color: #fff;
+    }
+    h1 span { color: var(--accent); }
+    .subtitle {
+      margin-top: 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%;
+      max-width: 700px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+
+    /* ── Input section ── */
+    .input-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 10px;
+      display: block;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      background: #0a0a0f;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.7;
+      padding: 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .method-toggle {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .method-toggle button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .method-toggle button.active {
+      background: var(--accent);
+      color: #0a0a0f;
+      font-weight: 700;
+    }
+
+    .top-n-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .top-n-wrap input[type="range"] {
+      accent-color: var(--accent);
+      width: 80px;
+    }
+    .top-n-val { color: var(--text); font-weight: 700; min-width: 18px; }
+
+    .btn-analyze {
+      margin-left: auto;
+      background: var(--accent);
+      color: #0a0a0f;
+      border: none;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-analyze:hover { opacity: 0.88; }
+    .btn-analyze:active { transform: scale(0.97); }
+    .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.25);
+      border-top-color: #0a0a0f;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn-analyze.loading .spinner { display: block; }
+    .btn-analyze.loading .btn-text { display: none; }
+
+    /* ── Result ── */
+    #result {
+      margin-top: 28px;
+      display: none;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .verdict {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid transparent;
+    }
+    .verdict.spam {
+      background: rgba(255,71,87,0.08);
+      border-color: rgba(255,71,87,0.25);
+    }
+    .verdict.ham {
+      background: rgba(46,204,113,0.07);
+      border-color: rgba(46,204,113,0.22);
+    }
+    .verdict-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+    .verdict-label {
+      font-family: var(--sans);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .verdict.spam .verdict-label { color: var(--spam); }
+    .verdict.ham .verdict-label { color: var(--ham); }
+    .verdict-meta {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* confidence bar */
+    .conf-bar-wrap {
+      margin-left: auto;
+      text-align: right;
+    }
+    .conf-val {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .verdict.spam .conf-val { color: var(--spam); }
+    .verdict.ham .conf-val { color: var(--ham); }
+    .conf-sublabel {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .bar-track {
+      width: 120px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .verdict.spam .bar-fill { background: var(--spam); }
+    .verdict.ham .bar-fill { background: var(--ham); }
+
+    /* Explanation */
+    .exp-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 14px;
+    }
+    .word-groups {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 480px) { .word-groups { grid-template-columns: 1fr; } }
+
+    .word-group-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .word-group-title.spam-side { color: var(--spam); }
+    .word-group-title.ham-side { color: var(--ham); }
+
+    .word-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .word-chip {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 3px 10px;
+      min-width: 80px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .word-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .word-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .word-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+    }
+    .word-bar-fill.spam-fill { background: linear-gradient(90deg, var(--spam), #ff6b7a); }
+    .word-bar-fill.ham-fill  { background: linear-gradient(90deg, var(--ham), #55efc4); }
+    .word-score {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .no-words {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* Error */
+    #error-box {
+      display: none;
+      margin-top: 16px;
+      background: rgba(255,71,87,0.1);
+      border: 1px solid rgba(255,71,87,0.3);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--spam);
+      animation: fadeUp 0.3s ease both;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.05em;
+      animation: fadeUp 0.5s 0.4s ease both;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-line">
+      <span class="logo-badge">NLP</span>
+    </div>
+    <h1>Spam <span>Detector</span></h1>
+    <p class="subtitle">TF-IDF · Logistic Regression · SHAP Explainability · 98.25% Accuracy</p>
+  </header>
+
+  <div class="card">
+    <label class="input-label" for="email-input">Email / Message Text</label>
+    <textarea
+      id="email-input"
+      placeholder="Paste an email or message here to check if it's spam…"
+    ></textarea>
+
+    <div class="controls">
+      <div class="method-toggle">
+        <button class="active" data-method="shap" onclick="setMethod(this)">SHAP</button>
+        <button data-method="feature_importance" onclick="setMethod(this)">Feature</button>
+      </div>
+
+      <div class="top-n-wrap">
+        <span>Top</span>
+        <input type="range" id="top-n" min="3" max="20" value="10"
+               oninput="document.getElementById('top-n-val').textContent = this.value" />
+        <span class="top-n-val" id="top-n-val">10</span>
+        <span>words</span>
+      </div>
+
+      <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
+        <div class="spinner"></div>
+        <span class="btn-text">Analyze →</span>
+      </button>
+    </div>
+
+    <div id="error-box"></div>
+
+    <div id="result">
+      <div class="verdict" id="verdict-box">
+        <span class="verdict-icon" id="verdict-icon"></span>
+        <div>
+          <div class="verdict-label" id="verdict-label"></div>
+          <div class="verdict-meta" id="verdict-meta"></div>
+        </div>
+        <div class="conf-bar-wrap">
+          <div class="conf-val" id="conf-val"></div>
+          <div class="conf-sublabel">confidence</div>
+          <div class="bar-track">
+            <div class="bar-fill" id="conf-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="exp-title">Top Contributing Words</p>
+      <div class="word-groups">
+        <div>
+          <div class="word-group-title spam-side">▲ Spam signals</div>
+          <div id="spam-words"></div>
+        </div>
+        <div>
+          <div class="word-group-title ham-side">▼ Ham signals</div>
+          <div id="ham-words"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    API endpoints: <a href="/health">/health</a> · <a href="#">/predict</a> · <a href="#">/predict/explain</a>
+    &nbsp;·&nbsp; Model trained on 5,728 emails
+  </footer>
+
+  <script>
+    let currentMethod = 'shap';
+
+    function setMethod(btn) {
+      document.querySelectorAll('.method-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMethod = btn.dataset.method;
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('analyze-btn');
+      btn.classList.toggle('loading', on);
+      btn.disabled = on;
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = '⚠ ' + msg;
+      box.style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+    }
+
+    function renderBar(container, words, scoreKey, fillClass) {
+      if (!words || words.length === 0) {
+        container.innerHTML = '<span class="no-words">none detected</span>';
+        return;
+      }
+      const maxVal = Math.max(...words.map(w => Math.abs(w[scoreKey] || 0))) || 1;
+      container.innerHTML = words.map(w => {
+        const pct = Math.min(100, (Math.abs(w[scoreKey] || 0) / maxVal) * 100).toFixed(1);
+        const score = (w[scoreKey] || 0).toFixed(4);
+        return `
+          <div class="word-item">
+            <span class="word-chip" title="${w.word}">${w.word}</span>
+            <div class="word-bar-wrap">
+              <div class="word-bar-track">
+                <div class="word-bar-fill ${fillClass}" style="width:${pct}%"></div>
+              </div>
+              <span class="word-score">${score}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function analyze() {
+      const text = document.getElementById('email-input').value.trim();
+      if (!text) { showError("Please enter some text to analyze."); return; }
+
+      document.getElementById('error-box').style.display = 'none';
+      document.getElementById('result').style.display = 'none';
+      setLoading(true);
+
+      const topN = parseInt(document.getElementById('top-n').value);
+
+      try {
+        const resp = await fetch('/predict/explain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, method: currentMethod, top_n: topN })
+        });
+        const data = await resp.json();
+        if (!resp.ok) { showError(data.error || 'Server error'); return; }
+
+        const isSpam = data.label === 'spam';
+        const conf = (data.confidence * 100).toFixed(1);
+        const spamProb = (data.spam_probability * 100).toFixed(1);
+
+        const vbox = document.getElementById('verdict-box');
+        vbox.className = 'verdict ' + (isSpam ? 'spam' : 'ham');
+        document.getElementById('verdict-icon').textContent  = isSpam ? '🚨' : '✅';
+        document.getElementById('verdict-label').textContent = isSpam ? 'SPAM' : 'HAM — Not Spam';
+        document.getElementById('verdict-meta').textContent  =
+          `spam probability: ${spamProb}% · method: ${currentMethod}`;
+        document.getElementById('conf-val').textContent = conf + '%';
+        setTimeout(() => {
+          document.getElementById('conf-bar').style.width = conf + '%';
+        }, 50);
+
+        const exp = data.explanation || {};
+        const scoreKey = currentMethod === 'shap' ? 'shap_value' : 'score';
+        renderBar(document.getElementById('spam-words'), exp.top_spam_words, scoreKey, 'spam-fill');
+        renderBar(document.getElementById('ham-words'),  exp.top_ham_words,  scoreKey, 'ham-fill');
+
+        document.getElementById('result').style.display = 'block';
+      } catch (e) {
+        showError('Could not reach the server. Is Flask running?');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Allow Ctrl+Enter to submit
+    document.getElementById('email-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) analyze();
+    });
+  </script>
+</body>
+</html>

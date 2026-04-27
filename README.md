@@ -18,6 +18,7 @@ An end-to-end spam email classification system built with **TF-IDF + Logistic Re
 - [Running Tests](#running-tests)
 - [Docker](#docker)
 - [File-by-File Explanation](#file-by-file-explanation)
+- [Web UI](#web-ui)
 
 ---
 
@@ -415,8 +416,8 @@ Build the image and run the container with one command each:
 # Build (also trains the model inside the container)
 docker build -t nlp-app .
 
-# Run on port 5000
-docker run -p 5000:5000 nlp-app
+# Run on port 5001 (UI) — maps to the app's internal port
+docker run -p 5001:5001 nlp-app
 ```
 
 The Dockerfile:
@@ -474,3 +475,84 @@ curl.exe http://localhost:5000/health
 | `artifacts/train.csv` | `train_pipeline.py` | 80% training split |
 | `artifacts/test.csv` | `train_pipeline.py` | 20% test split |
 | `logs/*.log` | Any file that imports `src/logger.py` | Timestamped log of all INFO messages |
+
+---
+
+## Web UI
+
+The project includes a browser-based interface for interacting with the spam detector — no curl commands needed.
+
+### Accessing the UI
+
+Once the Flask app (or Docker container) is running, open your browser and navigate to:
+
+```
+http://localhost:5001/
+```
+
+From the UI you can:
+- Paste or type any email/message text
+- Click **Predict** to instantly classify it as spam or ham
+- See the confidence score and SHAP-based word explanations rendered visually
+
+> **Note:** The UI runs on **port 5001**. Make sure to use `5001` in your browser, not `5000` (which is the raw API port).
+
+### Running with Docker on port 5001
+
+```bash
+# Build the image
+docker build -t nlp-app .
+
+# Run and map container port → host port 5001
+docker run -p 5001:5001 nlp-app
+```
+
+Then visit `http://localhost:5001/` in your browser.
+
+### Project Structure (with templates)
+
+```
+nlp-spam-detector/
+│
+├── app.py                          # Flask REST API + serves the UI
+├── model.py                        # Train the model & load for inference
+├── explain.py                      # SHAP & feature importance explainability
+├── emails.csv                      # Dataset (5728 emails, spam/ham labels)
+├── setup.py                        # Makes the project pip-installable
+├── requirements.txt                # All Python dependencies
+├── Dockerfile                      # Container build instructions
+│
+├── templates/                      # HTML templates for the web UI
+│   └── index.html                  # Main UI page served at http://localhost:5001/
+│
+├── src/                            # Core source package
+│   ├── __init__.py
+│   ├── exception.py
+│   ├── logger.py
+│   ├── utils.py
+│   │
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── data_ingestion.py
+│   │   └── model_trainer.py
+│   │
+│   └── pipeline/
+│       ├── __init__.py
+│       ├── train_pipeline.py
+│       └── predict_pipeline.py
+│
+├── tests/
+│   ├── __init__.py
+│   └── test_app.py
+│
+├── artifacts/                      # Auto-created when you train
+│   ├── model.pkl
+│   ├── vectorizer.pkl
+│   ├── raw.csv
+│   ├── train.csv
+│   └── test.csv
+│
+└── logs/
+    └── YYYY_MM_DD_HH_MM_SS.log
+```
+

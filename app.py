@@ -11,7 +11,7 @@ GET  /health           — liveness probe
 import sys
 import os
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 from src.logger import logger
 from src.exception import SpamDetectorException
@@ -28,6 +28,12 @@ logger.info("Model ready.")
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
+@app.route("/", methods=["GET"])
+def index():
+    """Serve the web interface."""
+    return render_template("index.html")
+
 
 @app.route("/health", methods=["GET"])
 def health():

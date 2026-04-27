@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY model.py explain.py app.py ./
 COPY emails.csv ./
 COPY src/ ./src/
+COPY templates/ ./templates/
 
 # ── Train the model at build time ───────────────────────────────────────────
 RUN python model.py

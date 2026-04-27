@@ -1,0 +1,8 @@
+# Generated files — do not commit these
+artifacts/
+logs/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.pkl

@@ -224,7 +224,7 @@ Checks if the API is running.
 
 **Request:**
 ```bash
-curl.exe http://localhost:5000/health
+curl.exe http://localhost:5001/health
 ```
 
 **Response:**
@@ -245,12 +245,12 @@ Classifies text and returns a prediction with a SHAP explanation.
 
 **Windows (PowerShell):**
 ```powershell
-curl.exe -X POST http://localhost:5000/predict -H "Content-Type: application/json" -d "{\"text\": \"Congratulations! You won a free gift card. Click here now!\"}"
+curl.exe -X POST http://localhost:5001/predict -H "Content-Type: application/json" -d "{\"text\": \"Congratulations! You won a free gift card. Click here now!\"}"
 ```
 
 **Mac / Linux:**
 ```bash
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5001/predict \
   -H "Content-Type: application/json" \
   -d '{"text": "Congratulations! You won a free gift card. Click here now!"}'
 ```
@@ -305,7 +305,7 @@ Same as `/predict` but lets you choose the explanation method and number of word
 
 **Windows (PowerShell):**
 ```powershell
-curl.exe -X POST http://localhost:5000/predict/explain -H "Content-Type: application/json" -d "{\"text\": \"Hey, are we still meeting tomorrow at 3pm?\", \"method\": \"feature_importance\", \"top_n\": 5}"
+curl.exe -X POST http://localhost:5001/predict/explain -H "Content-Type: application/json" -d "{\"text\": \"Hey, are we still meeting tomorrow at 3pm?\", \"method\": \"feature_importance\", \"top_n\": 5}"
 ```
 
 **Response:**
@@ -429,7 +429,7 @@ The Dockerfile:
 
 Once the container is running, test it exactly the same way as local:
 ```powershell
-curl.exe http://localhost:5000/health
+curl.exe http://localhost:5001/health
 ```
 
 ---
